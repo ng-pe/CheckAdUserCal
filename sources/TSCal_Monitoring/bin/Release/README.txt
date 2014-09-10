@@ -1,0 +1,1 @@
+TSCal_Monitoring.exe -u "user@domaine.adds" -w "XXXX" -s nomadests01 -c -r

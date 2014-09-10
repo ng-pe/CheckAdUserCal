@@ -1,0 +1,19 @@
+C:\Users\adngo\documents\visual studio 2010\Projects\TSCal_Monitoring\TSCal_Monitoring\bin\Release\TSCal_Monitoring.exe
+C:\Users\adngo\documents\visual studio 2010\Projects\TSCal_Monitoring\TSCal_Monitoring\bin\Release\TSCal_Monitoring.pdb
+C:\Users\adngo\documents\visual studio 2010\Projects\TSCal_Monitoring\TSCal_Monitoring\obj\x86\Release\ResolveAssemblyReference.cache
+C:\Users\adngo\documents\visual studio 2010\Projects\TSCal_Monitoring\TSCal_Monitoring\obj\x86\Release\TSCal_Monitoring.exe
+C:\Users\adngo\documents\visual studio 2010\Projects\TSCal_Monitoring\TSCal_Monitoring\obj\x86\Release\TSCal_Monitoring.pdb
+C:\Users\NGO\Desktop\TSCal_Monitoring\TSCal_Monitoring\obj\x86\Release\TSCal_Monitoring.exe
+C:\Users\NGO\Desktop\TSCal_Monitoring\TSCal_Monitoring\obj\x86\Release\TSCal_Monitoring.pdb
+C:\Users\NGO\Desktop\TSCal_Monitoring\TSCal_Monitoring\bin\Release\TSCal_Monitoring.exe
+C:\Users\NGO\Desktop\TSCal_Monitoring\TSCal_Monitoring\bin\Release\TSCal_Monitoring.pdb
+C:\Users\NGO\Desktop\TSCal_Monitoring\TSCal_Monitoring\obj\x86\Release\ResolveAssemblyReference.cache
+C:\Users\adlvsad01\Desktop\TSCal_Monitoring-1.0-src\TSCal_Monitoring\obj\x86\Release\TSCal_Monitoring.exe
+C:\Users\adlvsad01\Desktop\TSCal_Monitoring-1.0-src\TSCal_Monitoring\obj\x86\Release\TSCal_Monitoring.pdb
+C:\Users\adlvsad01\Desktop\TSCal_Monitoring-1.0-src\TSCal_Monitoring\bin\Release\TSCal_Monitoring.exe
+C:\Users\adlvsad01\Desktop\TSCal_Monitoring-1.0-src\TSCal_Monitoring\bin\Release\TSCal_Monitoring.pdb
+C:\Users\adlvsad01\Desktop\TSCal_Monitoring-1.0-src\TSCal_Monitoring\obj\x86\Release\ResolveAssemblyReference.cache
+D:\dev\Stuff\TSCal_Monitoring\TSCal_Monitoring\bin\Release\TSCal_Monitoring.exe
+D:\dev\Stuff\TSCal_Monitoring\TSCal_Monitoring\bin\Release\TSCal_Monitoring.pdb
+D:\dev\Stuff\TSCal_Monitoring\TSCal_Monitoring\obj\x86\Release\TSCal_Monitoring.exe
+D:\dev\Stuff\TSCal_Monitoring\TSCal_Monitoring\obj\x86\Release\TSCal_Monitoring.pdb
