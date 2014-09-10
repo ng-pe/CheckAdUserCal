@@ -3,35 +3,38 @@ CheckAdUserCal
 
 CheckAdUserCal : Terminal Server User Cal Monitoring for NSClient++ and standalone
 
-Overview
---------
+## Overview
+
 CheckAdUserCal is a `command-line utility` that help you to monitor Microsoft Terminal Server/RDS User CAL.
 You can use CheckAdUserCal with NSClient++ or standalone.
 
 Coded with Microsoft VisualC# Express Edition 2010
 
 
-Features
---------
+## Features
+
 - Show Used, Expired and registred TS CAL License 
 - Show user that have an CAL registred
 - Use with NSClient++ to report/alerts in NAGIOS ;)
 
 
-HowTo use with NSClient++
--------------------------
+## HowTo use with NSClient++
+
 
 Registre the External Scripts command line in NSC.ini
-.. sourcecode:: console
+```
 [External Scripts]
 check_tscal=scripts\TSCal_Monitoring.exe -s tscalsrv01 -w 15 -l "LDAP://DC=DOMAIN,DC=ADDS"
+```
+In Nagios/Centreon use :
+```
+check_nrpe -H $HOSTADDRESS$ -t 60 -c check_tscal
+``` 
 
-In Nagios/Centreon use "check_nrpe -H $HOSTADDRESS$ -t 60 -c check_tscal" command to check 
 
+## Screenshot
 
-Screenshot
-----------
-.. sourcecode:: console
+```
 
 CheckAdUserCal v1.1 (console Mode)
 Check Terminal Server User CAL on Active Directory
@@ -52,6 +55,5 @@ INFO > Get Data from ActiveDirectory... ( LDAP://DC=DOMAIN,DC=ADDS )
 + Global Cal License Count = 247 free / 1250
 
 + Delivered license by 'UNKNOWN' LS = 0
+```
 
-
-Press any key to exit!
