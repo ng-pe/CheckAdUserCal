@@ -1,9 +1,4 @@
-﻿// Outil de controle de License CAL
-// 20140910
-// auteur Nicolas GOLLET
-// Sous licence GPL v2
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,6 +7,7 @@ using System.Text;
 using System.Data;
 
 using System.Management;
+using System.Diagnostics;
 using System.Collections;
 // Active directory
 
@@ -21,17 +17,17 @@ using System.DirectoryServices;
 using System.Security.Permissions;
 using System.DirectoryServices.ActiveDirectory;
 
-
-// -------------------------------
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace TSCal_Monitoring
 {
-    // class pour le controle des licences terminal server mode utilisateur
     class TerminalServerUserCal
     {
         #region Members
         private string _LdapUri = null;
         private bool _Debug = false;
+
         private DataTable _dtUserCal;
         private DataTable _dtSrvCal;
         private Hashtable _htCalSrv;
@@ -58,7 +54,7 @@ namespace TSCal_Monitoring
             get { return this._lastError; }
         }
 
-       
+
 
         public bool debug
         {
@@ -75,9 +71,12 @@ namespace TSCal_Monitoring
         }
 
 
-        public DataTable GetDtUserCal {
-            get {               
-                return this._dtUserCal; }
+        public DataTable GetDtUserCal
+        {
+            get
+            {
+                return this._dtUserCal;
+            }
         }
         public DataTable GetDtSrvCal
         {
@@ -87,7 +86,7 @@ namespace TSCal_Monitoring
             }
         }
 
-       
+
 
         public string LdapUri
         {
@@ -133,10 +132,11 @@ namespace TSCal_Monitoring
         public void setPassword(string password)
         {
             this._SrvPaswd = password;
-            if (this._SrvPaswd != "" && this._SrvLogin != ""){
+            if (this._SrvPaswd != "" && this._SrvLogin != "")
+            {
                 this._SrvCustCred = true;
             }
-            
+
         }
 
         #endregion
@@ -195,22 +195,22 @@ namespace TSCal_Monitoring
                     {
                         return false;
                     }
-                   
+
                 }
             }
             catch (Exception exception)
             {
                 //dev-debug
-                this._lastError  = "ERROR " + exception.Message.ToString();
+                this._lastError = "ERROR " + exception.Message.ToString();
                 return false;
-                
+
             }
- 
+
         }
 
         public int GetLSRegCount(string server)
         {
-      
+
             try
             {
 
@@ -344,12 +344,12 @@ namespace TSCal_Monitoring
 
 
 
-        public TerminalServerUserCal()
+        public TerminalServerUserCal(bool reporting = false)
         {
-            this.Initializer();
+            this.Initializer(reporting);
 
         }
-        private void Initializer()
+        private void Initializer(bool reporting)
         {
             this._dtUserCal = new DataTable();
             this._dtSrvCal = new DataTable();
@@ -360,7 +360,7 @@ namespace TSCal_Monitoring
             this._htCalSrvLicInUseCount["!UNKNOWN"] = 0;
 
             this._htCalSrvLicRegCount = new Hashtable();
-            
+
         }
 
         public bool AddCalSrv(string calsrv)
@@ -374,7 +374,7 @@ namespace TSCal_Monitoring
             {
                 return false;
             }
-            
+
 
         }
 
@@ -397,6 +397,7 @@ namespace TSCal_Monitoring
 
         private void initDtUserCal()
         {
+
             this._dtUserCal = new DataTable();
             this._dtUserCal.Columns.Add("TSLicenseServer", typeof(string));
             this._dtUserCal.Columns.Add("SAMAccountName", typeof(string));
@@ -466,172 +467,201 @@ namespace TSCal_Monitoring
 
 
 
-      
-        public bool adresquest()
+
+        public bool adresquest(bool reporting = false)
         {
-            // initialisation de la table
-            this.initDtUserCal();
+            // init datatable for reporting
+            if (reporting == true)
+            {
+                this.initDtUserCal();
+            }
+            // Function variable :
+
+            int LIC_EXPIRED = 0;
+            int LIC_VALIDED = 0;
+            // current datetime for expiration control
+            System.DateTime DateControle = DateTime.Now;
 
             try
             {
-              
-              
+
                 DirectorySearcher dirSearch = null;
-                                           
-              
+
                 try
                 {
+                    // authentification 
                     if (this._SrvCustCred == true)
                     {
-                       dirSearch = new DirectorySearcher(    new DirectoryEntry(LdapUri , this._SrvLogin, this._SrvPaswd));
+                        // if credential is provided
+                        dirSearch = new DirectorySearcher(new DirectoryEntry(LdapUri, this._SrvLogin, this._SrvPaswd));
                     }
                     else
                     {
-                       dirSearch = new DirectorySearcher(    new DirectoryEntry(LdapUri ));
+                        // use current user credential
+                        dirSearch = new DirectorySearcher(new DirectoryEntry(LdapUri));
                     }
-                
+
                 }
                 catch (DirectoryServicesCOMException e)
                 {
-                   Console.WriteLine("Connection Creditial is Wrong!!!, please Check.");
-                   Console.WriteLine(e.Message.ToString());
+                    Console.WriteLine("Connection Creditial is Wrong!!!, please Check.");
+                    Console.WriteLine(e.Message.ToString());
+                    return false;
                 }
 
-
+                // Init search object
                 dirSearch.Filter = "(&(objectCategory=person)(objectClass=user)(((msTSManagingLS=*)(msTSLicenseVersion=*)(msTSExpireDate=*))))";
                 dirSearch.SearchScope = SearchScope.Subtree;
                 dirSearch.ServerTimeLimit = TimeSpan.FromSeconds(90);
+                dirSearch.PageSize = 1000;
 
-           
-                dirSearch.PageSize = 20000;
+                dirSearch.PropertiesToLoad.Clear();
+                dirSearch.PropertiesToLoad.Add("objectGuid");
+
                 SearchResultCollection userObjectAll = dirSearch.FindAll();
-                int i = 0;
-               
 
 
-                // compteur 
-                int LIC_EXPIRED = 0;
-                int LIC_VALIDED = 0;
 
-                // On boucle sur les Champs
-                foreach (SearchResult userResults in userObjectAll)
+                SearchResult[] searchResults = userObjectAll.Cast<System.DirectoryServices.SearchResult>().ToArray();
+
+
+                int CurrentPageSize = 1000;
+
+
+                // grab users informations 
+                for (var step = 0; step < Math.Ceiling((double)userObjectAll.Count / CurrentPageSize); step++)
                 {
-                  //  Console.WriteLine(item.ToString());
-                  //  Console.WriteLine(userResults.GetString(0));
-                    DirectoryEntry Ldap = new DirectoryEntry(userResults.Path);
-                    
-                    DirectorySearcher searcher = new DirectorySearcher(Ldap);
-                    foreach (SearchResult result in searcher.FindAll())
+                    //Debug// Console.WriteLine("step {0},", step.ToString());
+                    Parallel.ForEach(searchResults.Skip(step * CurrentPageSize).Take(CurrentPageSize), result =>
                     {
-                        int IsValidPUCAL = 0;
-                        DirectoryEntry DirEntry = result.GetDirectoryEntry();
-
-                        var varLogin = DirEntry.Properties["SAMAccountName"].Value;
-                        var varTerminalServer = DirEntry.Properties["terminalServer"].Value;
-                        var varMsTSManagingLS = DirEntry.Properties["msTSManagingLS"].Value;
-                        var varMsTSLicenseVersion = DirEntry.Properties["msTSLicenseVersion"].Value;
-                        var varMsTSExpireDate = DirEntry.Properties["msTSExpireDate"].Value;
-
-                        DateTime DateTimeMsTSExpireDate;
-
-                        var varStatus = "NC";
-
-                        // controle de l'expiration               
-                        if (varTerminalServer == null && varMsTSManagingLS != null && varMsTSLicenseVersion != null && varMsTSExpireDate != null)
+                        using (var entry = result.GetDirectoryEntry())
                         {
-                            if (varMsTSExpireDate != null)
+                            entry.RefreshCache(new[] { "SAMAccountName" });
+                            if (entry.Properties.Contains("SAMAccountName"))
                             {
-                                // parsing date
-                                DateTimeMsTSExpireDate = DateTime.Parse(varMsTSExpireDate.ToString());
-                                if (DateTimeMsTSExpireDate < DateTime.Now)
+
+                                var varLogin = entry.Properties["SAMAccountName"].Value;
+                                var varTerminalServer = entry.Properties["terminalServer"].Value;
+                                var varMsTSManagingLS = entry.Properties["msTSManagingLS"].Value;
+                                var varMsTSLicenseVersion = entry.Properties["msTSLicenseVersion"].Value;
+                                var varMsTSExpireDate = entry.Properties["msTSExpireDate"].Value;
+
+                                int IsValidPUCAL = 0;
+                                string varStatus = "UNKNOWN";
+
+                                // Check TS User CAL:
+                                if (varTerminalServer == null && varMsTSManagingLS != null && varMsTSLicenseVersion != null && varMsTSExpireDate != null)
                                 {
-                                    varStatus = "EXPIRE";
-                                    IsValidPUCAL = 2;
+
+
+                                    // parsing date
+                                    if (varMsTSExpireDate != null)
+                                    {
+                                        DateTime DateTimeMsTSExpireDate;
+                                        if (DateTime.TryParse(varMsTSExpireDate.ToString(), out DateTimeMsTSExpireDate))
+                                        {
+                                            if (DateTimeMsTSExpireDate < DateControle)
+                                            {
+                                                varStatus = "EXPIRE";
+                                                IsValidPUCAL = 2;
+                                                LIC_EXPIRED++;
+                                            }
+                                            else
+                                            {
+                                                varStatus = "USED";
+                                                IsValidPUCAL = 1;
+                                                LIC_VALIDED++;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            IsValidPUCAL = 1;
+                                            LIC_VALIDED++;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        IsValidPUCAL = 1;
+                                        LIC_VALIDED++;
+                                    }
+
                                 }
                                 else
                                 {
-                                    varStatus = "USED";
-                                    IsValidPUCAL = 1;
+                                    // This means User does not have License
+                                    IsValidPUCAL = 0;
                                 }
+
+
+
+
+                                // ajout de la ligne dans la dataTable
+
+                                if (varTerminalServer == null) varTerminalServer = "NC";
+                                if (varMsTSManagingLS == null) varMsTSManagingLS = "NC";
+                                if (varMsTSLicenseVersion == null) varMsTSLicenseVersion = "NC";
+                                if (varMsTSExpireDate == null) varMsTSExpireDate = "NC";
+
+                                string varServer = "!UNKNOWN";
+                                bool FindProductId = false;
+
+                                // ProductID search
+                                foreach (DictionaryEntry dictionaryEntry in this._htCalSrv)
+                                {
+                                    if (dictionaryEntry.Value.ToString() == varMsTSManagingLS.ToString() && FindProductId == false)
+                                    {
+                                        varServer = dictionaryEntry.Key.ToString();
+                                        this._htCalSrvLicCount[varServer] = Convert.ToInt32(this._htCalSrvLicCount[varServer]) + 1;
+                                        if (varStatus == "USED")
+                                        {
+                                            this._htCalSrvLicInUseCount[varServer] = Convert.ToInt32(this._htCalSrvLicInUseCount[varServer]) + 1;
+                                        }
+
+                                        FindProductId = true;
+                                        break;
+                                    }
+
+
+                                }
+
+                                if (varStatus == "USED" && varServer == "!UNKNOWN")
+                                {
+                                    this._htCalSrvLicInUseCount["!UNKNOWN"] = Convert.ToInt32(this._htCalSrvLicInUseCount["!UNKNOWN"]) + 1;
+                                }
+
+                                // 
+                                if (reporting == true)
+                                {
+                                    string[] row0 = { varServer, varLogin.ToString(), varMsTSLicenseVersion.ToString(), varMsTSExpireDate.ToString(), varMsTSManagingLS.ToString(), varStatus.ToString() };
+                                    this._dtUserCal.Rows.Add(row0);
+                                    Console.WriteLine("# " + varLogin.ToString() + " - " + varStatus.ToString());
+                                }
+
+
                             }
-                            else
-                            {
-                                IsValidPUCAL = 1;
-                            }
-
-                        }
-                        else
-                        {
-                            // This means User does not have License
-                            IsValidPUCAL = 0;
                         }
 
-                        // on compte
-                        if (IsValidPUCAL == 2)
-                        {
-                            LIC_EXPIRED++;
-                        }
-                        else if (IsValidPUCAL == 1)
-                        {
-                            LIC_VALIDED++;
-                        }
 
-                        // ajout de la ligne dans la dataTable
-
-                       if ( varTerminalServer == null) varTerminalServer = "NC";
-                       if (varMsTSManagingLS == null) varMsTSManagingLS = "NC";
-                       if (varMsTSLicenseVersion == null) varMsTSLicenseVersion = "NC";
-                       if (varMsTSExpireDate == null) varMsTSExpireDate = "NC";
-
-                       string varServer = "!UNKNOWN";
-                       bool FindProductId = false;
-                       foreach (DictionaryEntry dictionaryEntry in this._htCalSrv)
-                       {
-                           // work with value.
-                           if (dictionaryEntry.Value.ToString() == varMsTSManagingLS.ToString() && FindProductId == false)
-                           {
-                               varServer = dictionaryEntry.Key.ToString();
-                               this._htCalSrvLicCount[varServer] = Convert.ToInt32(this._htCalSrvLicCount[varServer]) + 1;
-                               if (varStatus == "USED")
-                               {
-                                   this._htCalSrvLicInUseCount[varServer] = Convert.ToInt32(this._htCalSrvLicInUseCount[varServer]) + 1;
-                               }
-
-                               FindProductId = true;
-                               break;
-                           }
-                         
-                               
-                       }
-
-                       if (varStatus == "USED" && varServer == "!UNKNOWN")
-                       {
-                           this._htCalSrvLicInUseCount["!UNKNOWN"] = Convert.ToInt32(this._htCalSrvLicInUseCount["!UNKNOWN"]) + 1;
-                       }
-
-                        string[] row0 = { varServer , varLogin.ToString() , varMsTSLicenseVersion.ToString(), varMsTSExpireDate.ToString(), varMsTSManagingLS.ToString(), varStatus.ToString() };
-                        this._dtUserCal.Rows.Add(row0);
-                        //Console.WriteLine("# " + varLogin.ToString() + " - " + varStatus.ToString());
+                    });
+                }
 
 
-
-                    } // END foreach
-                } // END WHILE
-
+                // update Licences Counter
                 this._CalUsed = LIC_VALIDED;
                 this._CalExpired = LIC_EXPIRED;
-            }
-           catch (ManagementException e)
-                    {
-                        Console.WriteLine("An error occurred : " + e.Message);
-               
 
+            }
+            catch (ManagementException e)
+            {
+                Console.WriteLine("An error occurred : " + e.Message);
                 return false;
             }
+
             return true;
 
-            
+
         }
+
 
 
 

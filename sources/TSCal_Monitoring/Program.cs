@@ -1,7 +1,6 @@
 ﻿// Outil de controle de License CAL
-// 20140910
+// 20150507
 // auteur Nicolas GOLLET
-// Sous licence GPL v2
 
 using System;
 using System.Collections.Generic;
@@ -30,7 +29,7 @@ namespace TSCal_Monitoring
 
             Console.WriteLine("TSCal_Monitoring.exe : RDS User License Cal Monitor");
             Console.WriteLine("Check RDS TS CAL license on Active Directory.");
-            Console.WriteLine("Version 1.1 - 2014/09/10 - Nicolas GOLLET");
+            Console.WriteLine("Version 2.0 - 2014/05/07 - Nicolas GOLLET");
             Console.WriteLine("Usage: MSTSCalCheck [OPTIONS]+ message");
             Console.WriteLine();
             Console.WriteLine("Options:");
@@ -46,8 +45,9 @@ namespace TSCal_Monitoring
             }
         }
 
-        
-        static int setWarningCalFreePercent(string strArg){
+
+        static int setWarningCalFreePercent(string strArg)
+        {
 
             int result = 20;
             try
@@ -61,12 +61,12 @@ namespace TSCal_Monitoring
                 // default warning = 20
                 return 20;
             }
-            
+
         }
 
         static void Main(string[] args)
         {
-           
+
             bool show_help = false;
             bool printReport = false;
             string ldapUri = "";
@@ -126,7 +126,7 @@ namespace TSCal_Monitoring
 
             if (nsclientmode == false)
             {
-                Console.WriteLine("CheckAdUserCal v1.1 (console Mode)");
+                Console.WriteLine("CheckAdUserCal 2.0 (console Mode)");
                 Console.WriteLine("by Nicolas GOLLET");
                 Console.WriteLine("----------------------------------");
                 Console.WriteLine("Check Terminal Server User CAL on Active Directory");
@@ -191,7 +191,7 @@ namespace TSCal_Monitoring
                                 Console.WriteLine("ERROR> Cannot add TSCal Server : " + srv);
                                 Console.WriteLine("       " + calcheck.lastError);
                             }
-                            
+
                         }
                         else
                         {
@@ -208,7 +208,7 @@ namespace TSCal_Monitoring
                     if (calcheck.AddCalSrv(server) == false)
                     {
                         Debug("Enable Adding CalSrv " + server);
-                      
+
 
                     }
                     else
@@ -227,9 +227,9 @@ namespace TSCal_Monitoring
 
             #region Grab Cal Srv info
             bool ResultCalServer = calcheck.CalLicSrv_GetData();
-            
 
-            if (ResultCalServer != true )
+
+            if (ResultCalServer != true)
             {
                 // impossible d'optenir les informations.
                 if (nsclientmode == false)
@@ -245,7 +245,7 @@ namespace TSCal_Monitoring
                 }
 
             }
-#endregion
+            #endregion
 
 
 
@@ -258,7 +258,7 @@ namespace TSCal_Monitoring
             // Grab Active directory User Cal data
             bool ResultAdRequest = calcheck.adresquest();
 
-            if ( ResultAdRequest != true)
+            if (ResultAdRequest != true)
             {
                 // enable to get info !
                 if (nsclientmode == false)
@@ -274,14 +274,14 @@ namespace TSCal_Monitoring
 
             }
 
-           
+
 
             #region Full report (todo)
             // TODO : Create Excel/csv Report
 
             if (printReport)
             {
-               
+
                 DataTable DtUsers = calcheck.GetDtUserCal;
 
                 foreach (DataRow row in DtUsers.Rows)
@@ -289,7 +289,7 @@ namespace TSCal_Monitoring
                     Console.WriteLine("-----------------------------");
                     foreach (DataColumn column in DtUsers.Columns)
                     {
-                        Console.Write(column.ColumnName + " = " );
+                        Console.Write(column.ColumnName + " = ");
                         Console.Write(row[column].ToString() + "\r\n");
                     }
                 }
@@ -364,15 +364,15 @@ namespace TSCal_Monitoring
                         globalCalUsed += calcheck.GetLSInUseCount(server);
                         int CalFree = calcheck.GetLSRegCount(server) - calcheck.GetLSInUseCount(server);
                         globalCalFree += CalFree;
-                  
+
                     }
                 }
                 int globalCalReg = globalCalUsed + globalCalFree;
 
-               // free Cal percent :
+                // free Cal percent :
                 int percentFree = globalCalFree * 100 / globalCalReg;
 
-               
+
                 string perf = @"|'free'=" + globalCalFree + @";0;0 'registered'=" + globalCalReg + @";0;0";
 
 
@@ -392,7 +392,7 @@ namespace TSCal_Monitoring
                 Environment.Exit(0);
 
             }
-            
+
 
 
 
